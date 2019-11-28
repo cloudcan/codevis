@@ -21,11 +21,11 @@ func Init(config Config) {
 	var err error
 	driver, err = neo4j.NewDriver(config.Uri, neo4j.BasicAuth(config.Username, config.Password, ""))
 	if err != nil {
-		log.Fatal("cannot load neo4j driver!")
+		log.Fatal("cannot load neo4j driver,cause:", err)
 	}
 	session, err = driver.Session(neo4j.AccessModeWrite)
 	if err != nil {
-		log.Fatal("cannot open db session!")
+		log.Fatal("cannot open db session,cause:", err)
 	}
 }
 
@@ -37,4 +37,9 @@ func Close() {
 	if driver != nil {
 		_ = driver.Close()
 	}
+}
+
+// exec cypher QL
+func Exec(cql string, params map[string]interface{}) (neo4j.Result, error) {
+	return session.Run(cql, params)
 }

@@ -1,16 +1,28 @@
 package main
 
 import (
+	"github.com/cloudcan/codevis/analysis"
 	"github.com/cloudcan/codevis/config"
 	"github.com/cloudcan/codevis/graphdb"
 	"log"
 )
 
 func main() {
-	// init config
-	config := config.Init("config.json")
+	// load config
+	config := config.Load("config.json")
 	// init db
 	graphdb.Init(config.GraphDB)
 	defer graphdb.Close()
-	log.Print(config)
+	// code analysis
+	result, err := analysis.Analysis(config.Analysis)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// result refine
+	g, err := result.Refine()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// save graph
+	g.Persistence()
 }

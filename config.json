@@ -3,5 +3,8 @@
     "username": "neo4j",
     "password": "root",
     "uri": "bolt://localhost:7687"
+  },
+  "analysis": {
+    "dir": "."
   }
 }
