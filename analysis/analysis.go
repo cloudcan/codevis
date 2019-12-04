@@ -14,6 +14,8 @@ import (
 	"log"
 	"path/filepath"
 	"reflect"
+	"sync/atomic"
+	"time"
 )
 
 type Config struct {
@@ -196,15 +198,39 @@ func (r *Result) Refine() (g *Graph, err error) {
 
 // save graph to db
 func (g *Graph) Persistence() {
+	// for stat
+	var (
+		start  = time.Now()
+		ticker = time.NewTicker(1 * time.Second)
+		count  = uint32(0)
+		stopCh = make(chan struct{})
+	)
+	go func() {
+		prev := uint32(0)
+		for {
+			select {
+			case <-ticker.C:
+				now := atomic.LoadUint32(&count)
+				log.Printf("save speed:%d/s\n", now-prev)
+				prev = now
+			case <-stopCh:
+				ticker.Stop()
+				log.Printf("save complete,total:%d nodes and %d edges ,cost:%s", len(g.Nodes), len(g.Edges), time.Now().Sub(start))
+				return
+			}
+		}
+
+	}()
 	// update deprecated node and edge
-	_, err := graphdb.Exec(fmt.Sprintf("match p=(n:%s)-[*..3]->(m) where n.name = '%s' delete p", lProg, g.Root.name), nil)
+	_, err := graphdb.Exec(fmt.Sprintf("match (n:%s{name:'%s'})--(m)  detach delete n,m", lProg, g.Root.name), nil)
 	if err != nil {
 		log.Print("update deprecated node error,cause:", err)
 	}
 	// save node
 	if len(g.Nodes) > 0 {
+		log.Print("start save node ...")
 		for _, node := range g.Nodes {
-			log.Print("save node:\n", node)
+			atomic.AddUint32(&count, 1)
 			_, err := graphdb.Exec(fmt.Sprintf("create(:%s%s)", node.Label(), node.Body()), nil)
 			if err != nil {
 				log.Print("save node err,cause:", err)
@@ -212,20 +238,23 @@ func (g *Graph) Persistence() {
 		}
 	}
 	// create index
-	graphdb.CreateIndex(string(lPackage), "name", "path")
-	graphdb.CreateIndex(string(lFile), "name", "path", "pkg")
-	graphdb.CreateIndex(string(lGlobal), "name", "file", "pkg")
-	graphdb.CreateIndex(string(lConst), "name", "file", "pkg")
-	graphdb.CreateIndex(string(lFunc), "name", "file", "pkg")
-	graphdb.CreateIndex(string(lType), "name", "file", "pkg")
+	graphdb.CreateIndex(string(lProg), "name", "uuid")
+	graphdb.CreateIndex(string(lPackage), "name", "path", "uuid")
+	graphdb.CreateIndex(string(lFile), "name", "path", "pkg", "uuid")
+	graphdb.CreateIndex(string(lGlobal), "name", "file", "pkg", "uuid")
+	graphdb.CreateIndex(string(lConst), "name", "file", "pkg", "uuid")
+	graphdb.CreateIndex(string(lFunc), "name", "file", "pkg", "uuid")
+	graphdb.CreateIndex(string(lType), "name", "file", "pkg", "uuid")
 	// save edge
 	if len(g.Edges) > 0 {
+		log.Print("start save edge ...")
 		for _, edge := range g.Edges {
-			log.Print("save edge:\n", edge)
-			_, err := graphdb.Exec(fmt.Sprintf("match (n),(m) where n.uuid='%s' and m.uuid='%s' create (n)-[:%s]->(m)", edge.From(), edge.To(), edge.RelationshipType()), nil)
+			atomic.AddUint32(&count, 1)
+			_, err := graphdb.Exec(fmt.Sprintf("match (n:%s{uuid:'%s'}),(m:%s{uuid:'%s'})  create (n)-[:%s]->(m)", edge.From().Label(), edge.From().Id(), edge.To().Label(), edge.To().Id(), edge.RelationshipType()), nil)
 			if err != nil {
 				log.Print("save edge err,cause:", err)
 			}
 		}
 	}
+	close(stopCh)
 }

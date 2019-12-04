@@ -158,7 +158,7 @@ func (f *Function) Label() NodeLabel {
 	return lFunc
 }
 func (f *Function) Body() string {
-	return fmt.Sprintf("{name:'%s',pkg:'%s',sign:'%s',file:'%s',pos:'%s',,uuid:'%s'}", f.name, f.pkg, f.sign, f.file, f.Pos(), f.Id())
+	return fmt.Sprintf("{name:'%s',pkg:'%s',sign:'%s',file:'%s',pos:'%s',uuid:'%s'}", f.name, f.pkg, f.sign, f.file, f.Pos(), f.Id())
 }
 func (f *Function) String() string {
 	return fmt.Sprintf("(%s%s)", f.Label(), f.Body())
@@ -266,8 +266,8 @@ func (t *Type) String() string {
 }
 
 type Edge interface {
-	From() string
-	To() string
+	From() Node
+	To() Node
 	RelationshipType() RType
 	fmt.Stringer
 }
@@ -281,12 +281,12 @@ type Import struct {
 func (i *Import) RelationshipType() RType {
 	return rImport
 }
-func (i *Import) From() string {
-	return i.from.Id()
+func (i *Import) From() Node {
+	return i.from
 }
 
-func (i *Import) To() string {
-	return i.to.Id()
+func (i *Import) To() Node {
+	return i.to
 }
 func (i *Import) String() string {
 	return fmt.Sprintf("%s-Import->%s", i.From(), i.To())
@@ -301,12 +301,12 @@ type Contains struct {
 func (c *Contains) RelationshipType() RType {
 	return rContains
 }
-func (c *Contains) From() string {
-	return c.from.Id()
+func (c *Contains) From() Node {
+	return c.from
 }
 
-func (c *Contains) To() string {
-	return c.to.Id()
+func (c *Contains) To() Node {
+	return c.to
 }
 func (c *Contains) String() string {
 	return fmt.Sprintf("%s-Contains->%s", c.From(), c.To())
@@ -321,12 +321,12 @@ type Declare struct {
 func (d *Declare) RelationshipType() RType {
 	return rDeclare
 }
-func (d *Declare) From() string {
-	return d.from.Id()
+func (d *Declare) From() Node {
+	return d.from
 }
 
-func (d *Declare) To() string {
-	return d.to.Id()
+func (d *Declare) To() Node {
+	return d.to
 }
 func (d *Declare) String() string {
 	return fmt.Sprintf("%s-Declare->%s", d.From(), d.To())
@@ -341,12 +341,12 @@ type Call struct {
 func (c *Call) RelationshipType() RType {
 	return rCall
 }
-func (c *Call) From() string {
-	return c.caller.Id()
+func (c *Call) From() Node {
+	return c.caller
 }
 
-func (c *Call) To() string {
-	return c.callee.Id()
+func (c *Call) To() Node {
+	return c.callee
 }
 func (c *Call) String() string {
 	return fmt.Sprintf("%s-Call->%s", c.From(), c.To())
@@ -360,12 +360,12 @@ type Receive struct {
 func (r *Receive) RelationshipType() RType {
 	return rRecv
 }
-func (r *Receive) From() string {
-	return r.sender.Id()
+func (r *Receive) From() Node {
+	return r.sender
 }
 
-func (r *Receive) To() string {
-	return r.receiver.Id()
+func (r *Receive) To() Node {
+	return r.receiver
 }
 
 func (r *Receive) String() string {
@@ -380,12 +380,12 @@ type Belong struct {
 func (b *Belong) RelationshipType() RType {
 	return rBelong
 }
-func (b *Belong) From() string {
-	return b.root.Id()
+func (b *Belong) From() Node {
+	return b.root
 }
 
-func (b *Belong) To() string {
-	return b.node.Id()
+func (b *Belong) To() Node {
+	return b.node
 }
 
 func (b *Belong) String() string {
